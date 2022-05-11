@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout  xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:clickable="true"
+        android:focusable="true"
+        android:id="@+id/everything">
+
+        <RelativeLayout
+            android:id="@+id/state"
+            android:layout_margin="3dp"
+            android:background="@color/green"
+            android:layout_width="6dp"
+            android:layout_height="60dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+            <TextView
+                android:textSize="24sp"
+                android:text="Unknown Device"
+                android:paddingHorizontal="10dp"
+                android:id="@+id/name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/darkestorange" />
+
+            <TextView
+                android:textSize="15sp"
+                android:paddingHorizontal="10dp"
+                android:id="@+id/timeOfThemBeingAround"
+                android:text="~ seconds"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/darker_gray" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <ImageView
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="10dp"
+        android:src="@drawable/delete"
+        android:layout_gravity="end|center_vertical"
+        android:id="@+id/delete"
+        android:layout_width="50dp"
+        android:layout_height="50dp" />
+</FrameLayout>

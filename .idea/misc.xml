@@ -3,6 +3,12 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/Users/Kream/Desktop/Covide/app/src/main/res/drawable/button.xml" value="0.2045" />
+        <entry key="..\:/Users/Kream/Desktop/Covide/app/src/main/res/drawable/graybutton.xml" value="0.196" />
+        <entry key="..\:/Users/Kream/Desktop/Covide/app/src/main/res/drawable/greenbutton.xml" value="0.196" />
+        <entry key="..\:/Users/Kream/Desktop/Covide/app/src/main/res/drawable/redbutton.xml" value="0.196" />
+        <entry key="..\:/Users/Kream/Desktop/Covide/app/src/main/res/layout/activity_main.xml" value="0.4392956441149212" />
+        <entry key="..\:/Users/Kream/Desktop/Covide/app/src/main/res/layout/device.xml" value="0.36666666666666664" />
         <entry key="..\:/Users/madri/Desktop/Covide/app/src/main/res/layout/activity_main.xml" value="0.20520833333333333" />
       </map>
     </option>

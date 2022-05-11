@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "962492305328",
+    "firebase_url": "https://covide-dz-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "covide-dz",
+    "storage_bucket": "covide-dz.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:962492305328:android:dd5d0fe1e919a7d271d075",
+        "android_client_info": {
+          "package_name": "mustshop.arduino.covide"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "962492305328-ctf22f5grknlbskoov8nsofqv64ja91c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "mustshop.arduino.covide",
+            "certificate_hash": "45af8345ada9a4ce013f371d4571367c6cd6a463"
+          }
+        },
+        {
+          "client_id": "962492305328-2u6odj1dup32ek6rj1d7t1facf0vv2p1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDcw6dAehiIQxAEexbng5Jmh5vWW6Lt2vg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "962492305328-2u6odj1dup32ek6rj1d7t1facf0vv2p1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
