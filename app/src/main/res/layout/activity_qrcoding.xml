@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".QRCoding">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Task bar -->
+        <FrameLayout
+            android:background="@color/orange"
+            android:paddingHorizontal="10dp"
+            android:paddingTop="15dp"
+            android:paddingBottom="10dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <LinearLayout
+                android:gravity="center"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_marginStart="5dp"
+                    android:layout_marginEnd="10dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:id="@+id/gobackImage"
+                    android:onClick="gobackClicked"
+                    android:layout_gravity="start|center_vertical"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:textSize="22sp"
+                        android:id="@+id/appTitle"
+                        android:text="Covide - QR Code"
+                        android:textColor="@android:color/white"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical" />
+                    <TextView
+                        android:visibility="invisible"
+                        android:paddingHorizontal="10dp"
+                        android:id="@+id/connectionIndicator"
+                        android:layout_gravity="center"
+                        android:textSize="13sp"
+                        android:textColor="@color/gray"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Connecting" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <ImageView
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginHorizontal="10dp"
+                android:onClick="listClicked"
+                android:id="@+id/qrcodeListImage"
+                android:layout_width="40dp"
+                android:layout_height="40dp" />
+        </FrameLayout>
+
+        <SurfaceView
+            android:id="@+id/surfaceView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </LinearLayout>
+
+    <!-- Make me discoverable -->
+    <TextView
+        android:layout_gravity="bottom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/buttontextsize"
+        android:id="@+id/status"
+        android:background="@drawable/button"
+        android:paddingHorizontal="15dp"
+        android:paddingVertical="15dp"
+        android:layout_marginHorizontal="20dp"
+        android:layout_marginVertical="10dp"
+        android:textColor="@color/white"
+        android:text="Scanning..." />
+
+</FrameLayout>

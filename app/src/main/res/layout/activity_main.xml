@@ -60,30 +60,50 @@
             <ImageView
                 android:clickable="true"
                 android:focusable="true"
-                android:onClick="openSettingsClicked"
+                android:onClick="qrcodingClicked"
                 android:layout_gravity="end|center_vertical"
                 android:layout_marginHorizontal="10dp"
-                android:id="@+id/settingsImage"
+                android:id="@+id/qrcodingImage"
                 android:layout_width="40dp"
                 android:layout_height="40dp" />
         </FrameLayout>
 
 
         <!-- Safety Status -->
-        <TextView
-            android:layout_marginTop="15dp"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/status"
-            android:textSize="@dimen/buttontextsize"
             android:gravity="center"
-            android:layout_marginHorizontal="10dp"
-            android:layout_gravity="center_horizontal"
-            android:background="@drawable/graybutton"
-            android:paddingHorizontal="15dp"
-            android:paddingVertical="15dp"
-            android:textColor="@color/white"
-            android:text="Loading..." />
+            android:orientation="horizontal">
+            <TextView
+                android:layout_marginTop="15dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/status"
+                android:textSize="@dimen/buttontextsize"
+                android:gravity="center"
+                android:layout_marginHorizontal="10dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/graybutton"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="15dp"
+                android:textColor="@color/white"
+                android:text="Loading..." />
+            <TextView
+                android:layout_marginTop="15dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/place"
+                android:textSize="@dimen/buttontextsize"
+                android:gravity="center"
+                android:layout_marginHorizontal="10dp"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/graybutton"
+                android:paddingHorizontal="15dp"
+                android:paddingVertical="15dp"
+                android:textColor="@color/white"
+                android:text="Place..." />
+        </LinearLayout>
 
         <!-- Declare I'm Sick -->
         <LinearLayout

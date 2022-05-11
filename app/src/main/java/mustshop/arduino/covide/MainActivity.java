@@ -24,8 +24,10 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.bumptech.glide.Glide;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
@@ -83,9 +85,12 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
 
     private OkHttpClient client = new OkHttpClient();
     private List<FoundBluetoothDevice> live_devices = new ArrayList<>();
+    private List<QRCode> QRCodes = new ArrayList<>();
     private boolean updatedList = false;
     private Handler handler = new Handler();
     private String mySickStatus = "";
+    private ImageView qrcodingImage;
+    private TextView place;
 
 
     @Override
@@ -96,57 +101,86 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
         Thread.setDefaultUncaughtExceptionHandler(new TopExceptionHandler());
         context = this;
 
-        status = findViewById(R.id.status);
-        connectionIndicator = findViewById(R.id.connectionIndicator);
-        set = findViewById(R.id.set);
-        unset = findViewById(R.id.unset);
+        try {
+            status = findViewById(R.id.status);
+            place = findViewById(R.id.place);
+            connectionIndicator = findViewById(R.id.connectionIndicator);
+            set = findViewById(R.id.set);
+            unset = findViewById(R.id.unset);
 
-        if (!doIHaveBluetoothPermission()) {
-            requestBluetoohPermission();
-        } else if(!doIHaveLocationPermission()){
-            requestLocationPermission();
-        } else if(!doIHaveConnectBluetoothPermission()){
-            requestConnectBluetoothPermission();
-        } else if(!doIHaveScanBluetoothPermission()){
-            requestScanBluetoothPermission();
-        } else {
-            oncreateStuff();
+            qrcodingImage = findViewById(R.id.qrcodingImage);
+
+            glider(context, R.drawable.qr, qrcodingImage);
+
+            if (!doIHaveBluetoothPermission()) {
+                requestBluetoohPermission();
+            } else if(!doIHaveLocationPermission()){
+                requestLocationPermission();
+            } else if(!doIHaveConnectBluetoothPermission()){
+                requestConnectBluetoothPermission();
+            } else if(!doIHaveScanBluetoothPermission()){
+                requestScanBluetoothPermission();
+            } else {
+                oncreateStuff();
+            }
+        } catch(Exception e){
+            log(e);
+        }
+    }
+
+    void glider(Context context, int source, ImageView image){
+        try {
+            Glide.with(context).load(source).into(image);
+        } catch (Exception e) {
+            Log.i("HH", e.toString());
+            e.printStackTrace();
         }
     }
 
     private void oncreateStuff() {
 
         // log the person in, here i'm just using anonymous auth a.k.a it gives me a uuid for each device separately
-        mAuth = FirebaseAuth.getInstance();
-        FirebaseUser currentUser = mAuth.getCurrentUser();
-        if(currentUser==null){
-            mAuth.signInAnonymously()
-                .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                    @Override
-                    public void onComplete(@NonNull Task<AuthResult> task) {
-                        if (task.isSuccessful()) {
-                            // Sign in success, update UI with the signed-in user's information
-                            FirebaseUser user = mAuth.getCurrentUser();
-                            myUid = user.getUid();
-                            search();
-                        } else {
-                            print("Failed to login, are you connected to the internet?");
-                        }
-                    }
-                });
-        } else {
-            myUid = currentUser.getUid();
-            search();
+        try {
+            mAuth = FirebaseAuth.getInstance();
+            FirebaseUser currentUser = mAuth.getCurrentUser();
+            if(currentUser==null){
+                mAuth.signInAnonymously()
+                        .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                            @Override
+                            public void onComplete(@NonNull Task<AuthResult> task) {
+                                if (task.isSuccessful()) {
+                                    // Sign in success, update UI with the signed-in user's information
+                                    FirebaseUser user = mAuth.getCurrentUser();
+                                    myUid = user.getUid();
+                                    search();
+                                } else {
+                                    print("Failed to login, are you connected to the internet?");
+                                }
+                            }
+                        });
+            } else {
+                myUid = currentUser.getUid();
+                search();
+            }
+        } catch(Exception e){
+            e.printStackTrace();
+            log(e);
         }
     }
 
     @Override
     protected void onDestroy() {
-        MainActivity.this.unregisterReceiver(myReceiver);
+        try {
+
+            MainActivity.this.unregisterReceiver(myReceiver);
+        } catch(Exception ignore){}
         super.onDestroy();
     }
 
+    private long previous_locations_update = 0;
+    private long duration_for_updating_locations = 3000; // 3 seconds
     private void search(){
+        declareBluetoothStuff();
 
         // this is just to check if we are online
         new Thread(new Runnable() {
@@ -164,6 +198,85 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
             }
         }).start();
 
+        // this is just to check if we are online
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                listenToContaminatedPlacesDatabase();
+
+                boolean currentlyDisplayingWeVisitedAContaminatedPlace = false;
+                FirebaseDatabase database = FirebaseDatabase.getInstance();
+                while(true){
+
+                    // keep locations around u up to date, if u r sick, report all places automatically, if u r not sick remove all places
+                    if(System.currentTimeMillis() - previous_locations_update > duration_for_updating_locations){
+                        previous_locations_update = System.currentTimeMillis();
+
+                        if(mySickStatus.equals("Safe")){
+                            for(QRCode qrCode: QRCodes){
+                                @SuppressLint("MissingPermission")
+                                DatabaseReference reportLocationRef = database.getReference("contaminated_places").child(qrCode.qrcode).child(mBluetoothAdapter.getName().split(" ## ")[0] + " %% " + myUid);
+                                reportLocationRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                        if(snapshot.getValue()!=null)
+                                            reportLocationRef.removeValue();
+                                    }
+
+                                    @Override public void onCancelled(@NonNull DatabaseError error) {}
+                                });
+                            }
+                        } else if(mySickStatus.equals("Somebody3dak") || mySickStatus.equals("selfReportedlySick")){
+                            for(QRCode qrCode: QRCodes){
+                                @SuppressLint("MissingPermission")
+                                DatabaseReference reportLocationRef = database.getReference("contaminated_places").child(qrCode.qrcode).child(mBluetoothAdapter.getName().split(" ## ")[0] + " %% " + myUid);
+                                reportLocationRef.addListenerForSingleValueEvent(new ValueEventListener() {
+                                    @Override
+                                    public void onDataChange(@NonNull DataSnapshot snapshot) {
+                                        if(snapshot.getValue()==null)
+                                            reportLocationRef.setValue(String.valueOf(System.currentTimeMillis()));
+                                    }
+
+                                    @Override public void onCancelled(@NonNull DatabaseError error) {
+                                        log("aha " + error);
+                                    }
+                                });
+                            }
+                        }
+                    }
+
+                    if(weVisitedAContaminatedPlace){
+                        if(!currentlyDisplayingWeVisitedAContaminatedPlace){
+                            currentlyDisplayingWeVisitedAContaminatedPlace = true;
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    place.setText("Place Infected");
+                                    place.setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.redbutton, null));
+                                    applyColor(status, Color.WHITE, true);
+                                }
+                            });
+                        }
+                    }
+
+                    if(!weVisitedAContaminatedPlace){
+                        if(currentlyDisplayingWeVisitedAContaminatedPlace){
+                            currentlyDisplayingWeVisitedAContaminatedPlace = false;
+                            handler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    place.setText("Place Safe");
+                                    place.setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.greenbutton, null));
+                                    applyColor(status, Color.BLACK, true);
+                                }
+                            });
+                        }
+                    }
+
+                }
+            }
+        }).start();
+
         // bluetooth searching stuff
         new Thread(new Runnable() {
             @SuppressLint("MissingPermission")
@@ -173,15 +286,14 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
                 // moved these to here to reduce load on main Ui thread
                 prepareSharedPrefs();
                 loadSharedPrefs();
-                listenToOnlineDatabase();
-                declareBluetoothStuff();
+                listenToSickPeopleDatabase();
                 displayBondedDevices();
                 updateRecyclerView();
                 attachBroadCastReceiver();
 
                 // constant searching process
                 while(true){
-                    //try {
+                    try {
                         // was bluetooth turned off
                         if(!mBluetoothAdapter.isEnabled()) {
                             setBluetoothEnable(true);
@@ -194,7 +306,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
 
                         // if a cleanup is due then clean the devices list (notice we are cleaning up when search was over and before we restart it to avoid multiple places modifying the list)
                         if(!searching && System.currentTimeMillis() - lastCleanup >= cleanUpTime){
-                            cleanListUp();
+                            cleanListUp(); // from old devices that have never come back
                             saveSharedPrefs();
 
                             // update clean up time for next time
@@ -215,10 +327,10 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
                             saveSharedPrefs();
                         }
 
-                    //} catch(Exception e){
-                    //    e.printStackTrace();
-                    //    log(e);
-                    //}
+                    } catch(Exception e){
+                        e.printStackTrace();
+                        log(e);
+                    }
 
                 }
 
@@ -232,7 +344,6 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
             public void run() {
                 // coordinate list stuff
                 deviceListRecyclerView = findViewById(R.id.deviceListRecyclerView);
-                log("devices updatere " + devices.size());
                 deviceListAdapter = new DeviceListAdapter(context, devices);
                 deviceListRecyclerView.setAdapter(deviceListAdapter);
                 deviceListRecyclerView.setLayoutManager(new MyLinearLayoutManager(context, 1, false));
@@ -306,7 +417,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
         }
     }
 
-    private void listenToOnlineDatabase() {
+    private void listenToSickPeopleDatabase() {
         FirebaseDatabase database = FirebaseDatabase.getInstance();
         DatabaseReference myRef = database.getReference("people_that_are_sick");
         // Read from the database
@@ -321,7 +432,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
                     Object sick_personObject = child.getKey();
                     if(sick_personObject!=null){
                         String sick_person_device_name = String.valueOf(sick_personObject);
-                        sick_person_device_name = sick_person_device_name.replace("bibi", "##");
+                        sick_person_device_name = sick_person_device_name.replace("%%", "##");
 
                         // my device is on the cloud
                         if((mBluetoothAdapter.getName().split(" ## ")[0] + " ## " + myUid).equals(sick_person_device_name)){
@@ -348,14 +459,13 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
                                     updateUi("Somebody3dak");
 
                                     // report to other user phones that u r sick
-                                    DatabaseReference didiAlreadyReportRef = database.getReference("people_that_are_sick").child(mBluetoothAdapter.getName().split(" ## ")[0] + " bibi " + myUid);
+                                    DatabaseReference didiAlreadyReportRef = database.getReference("people_that_are_sick").child(mBluetoothAdapter.getName().split(" ## ")[0] + " %% " + myUid);
                                     didiAlreadyReportRef.addListenerForSingleValueEvent(new ValueEventListener() {
                                         @Override
                                         public void onDataChange(@NonNull DataSnapshot snapshot) {
 
                                             // if i didn't already report that i'm sick then do it
                                             if(dataSnapshot.getValue()==null){ // if i didn't already report that somebody 3dani report it again
-                                                log("i updated it");
                                                 didiAlreadyReportRef.setValue(String.valueOf(System.currentTimeMillis()));
                                             }
                                         }
@@ -377,11 +487,10 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
                     // if i reported i'm sick but i'm not in the db, apply it again, because maybe i clicked that button while offline
                     if(ireported){
                         updateUi("selfReportedlySick");
-                        DatabaseReference didiAlreadyReportRef = database.getReference("people_that_are_sick").child(mBluetoothAdapter.getName().split(" ## ")[0] + " bibi " + myUid);
-                        log("i updated it");
+                        DatabaseReference didiAlreadyReportRef = database.getReference("people_that_are_sick").child(mBluetoothAdapter.getName().split(" ## ")[0] + " %% " + myUid);
                         didiAlreadyReportRef.setValue(String.valueOf(System.currentTimeMillis()));
 
-                    // in this case i was never in the database and i never self reported so i'm officially safe
+                        // in this case i was never in the database and i never self reported so i'm officially safe
                     } else {
                         updateUi("Safe");
                     }
@@ -394,7 +503,63 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
         });
     }
 
+
+    public static class QRCode {
+        String qrcode = "";
+    }
+
+    private boolean weVisitedAContaminatedPlace = false;
+    private String contaminatedPlace = "";
+    private void listenToContaminatedPlacesDatabase() {
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference("contaminated_places");
+        // Read from the database
+        myRef.addValueEventListener(new ValueEventListener() {
+            @SuppressLint("MissingPermission")
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                // This method is called once with the initial value and again
+                // whenever data at this location is updated.
+                boolean tempWeVisitedAContaminatedPlace = false;
+                for(DataSnapshot child: dataSnapshot.getChildren()){
+                    Object contaminated_placeObject = child.getKey();
+                    if(contaminated_placeObject!=null){
+                        for(QRCode qrCode: QRCodes){
+                            if(qrCode.qrcode.equals(String.valueOf(contaminated_placeObject))){
+                                tempWeVisitedAContaminatedPlace = true;
+                                weVisitedAContaminatedPlace = true;
+                                contaminatedPlace = String.valueOf(contaminated_placeObject);
+                                break;
+                            }
+                        }
+                    }
+                }
+                if(!tempWeVisitedAContaminatedPlace){
+                    weVisitedAContaminatedPlace = false;
+                    contaminatedPlace = "";
+                }
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError error) {
+            }
+        });
+    }
+
     private void loadSharedPrefs() {
+
+        // load visited_locations
+        String visited_locations_string = prefs.getString("visited_locations", "");
+        String[] visited_locations_strings = visited_locations_string.split(",");
+        QRCodes = new ArrayList<>();
+        for(int i=0; i<visited_locations_strings.length; i++){
+            int finalI = i;
+            QRCodes.add(new QRCode(){{
+                qrcode = visited_locations_strings[finalI];
+            }});
+        }
+
 
         // load device list
         String mac_addresses_strings = prefs.getString("mac_addresses", "");
@@ -403,6 +568,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
         // there are no previously saved macaddresses
         if(mac_addresses_strings.isEmpty())
             return;
+
 
         String names_strings = prefs.getString("names", "");
         String total_time_encountered_with_strings = prefs.getString("total_time_encountered_with", "");
@@ -415,30 +581,31 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
         String[] bonded_string = bonded_strings.split(",");
         String[] last_time_seen_string = last_time_seen_strings.split(",");
 
-        devices = new ArrayList<>();
-        for(int i=0; i<mac_addresses_string.length-1; i++){
-            int finalI = i;
+        try {
 
-            // DEBUGGING: because i tested the app without this field so its array is empty, to avoid crash i added this, delete it but delete app data too to avoid crash
-            long last_time_seen_input = System.currentTimeMillis();
-            if(!last_time_seen_strings.isEmpty()){
-                last_time_seen_input = Long.parseLong(last_time_seen_string[finalI]);
+
+            devices = new ArrayList<>();
+            for(int i=0; i<mac_addresses_string.length; i++){
+                int finalI = i;
+
+                devices.add(new FoundBluetoothDevice(){{
+                    name = names_string[finalI];
+                    mac_address = mac_addresses_string[finalI];
+                    bonded = bonded_string[finalI].equals("1");
+                    total_time_encountered_with = Long.parseLong(total_time_encountered_with_string[finalI]);
+                    last_time_seen = Long.parseLong(last_time_seen_string[finalI]);
+                }});
             }
 
-            long finalLast_time_seen_input = last_time_seen_input;
-            devices.add(new FoundBluetoothDevice(){{
-                name = names_string[finalI];
-                mac_address = mac_addresses_string[finalI];
-                bonded = bonded_string[finalI].equals("1");
-                total_time_encountered_with = Long.parseLong(total_time_encountered_with_string[finalI]);
-                last_time_seen = finalLast_time_seen_input;
-            }});
+        } catch(Exception e){
+            log(e);
+            e.printStackTrace();
+            devices = new ArrayList<>();
+            saveSharedPrefs();
         }
-
 
         // when's the last time we have cleaned our list off of people that were gone for a whild and never even surpassed 10 minutes?
         lastCleanup = prefs.getLong("lastCleanup", System.currentTimeMillis());
-
     }
 
     private void saveSharedPrefs() {
@@ -522,7 +689,6 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
                         handler.post(new Runnable() {
                             @Override
                             public void run() {
-                                log("devices liveupdate " + devices.size());
                                 deviceListAdapter.notifyItemChanged(finalIndex);
                             }
                         });
@@ -537,7 +703,6 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
                     handler.post(new Runnable() {
                         @Override
                         public void run() {
-                            log("devices unliveupdate " + devices.size());
                             deviceListAdapter.notifyItemChanged(finalIndex);
                         }
                     });
@@ -610,7 +775,6 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
                                 }
 
                                 // notify to save list again
-                                log("devices aha " + devices.size());
                                 deviceListAdapter.notifyItemChanged(index);
                                 updatedList = true;
                                 break;
@@ -621,12 +785,13 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
                         // if not in list add it
                         if(!alreadyInList){
                             devices.add(new FoundBluetoothDevice(){{
+                                total_time_encountered_with = 0;
+                                last_time_seen = System.currentTimeMillis();
                                 mac_address = device1.getAddress();
                                 name = device1.getName();
                                 live = true;
                             }});
                             updatedList = true;
-                            log("devices inserted " + devices.size());
                             deviceListAdapter.notifyItemInserted(devices.size()-1);
                         }
                     }
@@ -639,25 +804,25 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
     public void delete(int positionReal) {
         devices.remove(positionReal);
         updatedList = true;
-        deviceListAdapter.notifyItemRemoved(positionReal+1);
+        deviceListAdapter.notifyItemRemoved(positionReal);
+        deviceListAdapter.notifyItemRangeChanged(positionReal, devices.size());
     }
 
     public void discoverMeClicked(View view) {
+        startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0), 1);
+    }
 
-        devices.add(new FoundBluetoothDevice(){{
-            name = String.valueOf(System.currentTimeMillis());
-        }});
-        deviceListAdapter.notifyItemInserted(devices.size()-1);
-        updatedList = true;
-
-        //startActivityForResult(new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE).putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 0), 1);
+    public void qrcodingClicked(View view) {
+        Intent intent = new Intent(context, QRCoding.class);
+        startActivity(intent);
+        finish();
     }
 
     public static class FoundBluetoothDevice {
         long total_time_encountered_with = 0;
         long last_time_seen = 0;
         String mac_address = "";
-        String name = "";
+        String name;
         boolean bonded = false;
         boolean live = false;
     }
@@ -679,6 +844,8 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
             // if this bonded device isn't in list just add it
             if(!alreadyInList){
                 devices.add(new FoundBluetoothDevice(){{
+                    total_time_encountered_with = 0;
+                    last_time_seen = System.currentTimeMillis();
                     mac_address = device1.getAddress();
                     name = device1.getName();
                     bonded = true;
@@ -820,8 +987,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
 
         updateUi("Loading");
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference reportRef = database.getReference("people_that_are_sick").child(mBluetoothAdapter.getName().split(" ## ")[0] + " bibi " + myUid);
-        log("i updated it");
+        DatabaseReference reportRef = database.getReference("people_that_are_sick").child(mBluetoothAdapter.getName().split(" ## ")[0] + " %% " + myUid);
         reportRef.setValue(String.valueOf(System.currentTimeMillis()));
     }
 
@@ -833,8 +999,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
 
         updateUi("Loading");
         FirebaseDatabase database = FirebaseDatabase.getInstance();
-        DatabaseReference reportRef = database.getReference("people_that_are_sick").child(mBluetoothAdapter.getName().split(" ## ")[0] + " bibi " + myUid);
-        log("removed");
+        DatabaseReference reportRef = database.getReference("people_that_are_sick").child(mBluetoothAdapter.getName().split(" ## ")[0] + " %% " + myUid);
         reportRef.removeValue();
     }
 
