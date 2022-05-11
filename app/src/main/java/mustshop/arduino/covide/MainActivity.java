@@ -253,7 +253,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
                                 public void run() {
                                     place.setText("Place Infected");
                                     place.setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.redbutton, null));
-                                    applyColor(status, Color.WHITE, true);
+                                    applyColor(place, Color.WHITE, true);
                                 }
                             });
                         }
@@ -267,7 +267,7 @@ public class MainActivity extends AppCompatActivity implements DeviceListInterfa
                                 public void run() {
                                     place.setText("Place Safe");
                                     place.setBackground(ResourcesCompat.getDrawable(getResources(), R.drawable.greenbutton, null));
-                                    applyColor(status, Color.BLACK, true);
+                                    applyColor(place, Color.BLACK, true);
                                 }
                             });
                         }

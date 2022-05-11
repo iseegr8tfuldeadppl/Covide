@@ -71,12 +71,12 @@
 
         <!-- Safety Status -->
         <LinearLayout
+            android:layout_marginTop="15dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
             android:orientation="horizontal">
             <TextView
-                android:layout_marginTop="15dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/status"
@@ -90,7 +90,6 @@
                 android:textColor="@color/white"
                 android:text="Loading..." />
             <TextView
-                android:layout_marginTop="15dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:id="@+id/place"
